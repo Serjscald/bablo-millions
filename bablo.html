@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Бабломиллионы!</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #fbbf24;
+            --money-color: #22c55e;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        #start-screen h2 {
+            font-size: 36px;
+            color: var(--gold);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #start-screen p {
+            font-size: 18px;
+            color: var(--text-muted);
+            animation: pulse-text 1.5s infinite;
+        }
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .game-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 32px;
+            background: linear-gradient(to right, var(--gold), #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .rules {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .vaults-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 320px;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .vault-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex: 1;
+        }
+
+        .vault-wrapper:active { transform: scale(0.95); }
+        .vault-wrapper.selected .vault {
+            border-color: var(--gold);
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.4);
+        }
+
+        .vault {
+            background-color: #0f172a;
+            border: 3px solid #334155;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .v-12 { height: 240px; }
+        .v-7  { height: 150px; }
+        .v-5  { height: 110px; }
+
+        .money {
+            background: linear-gradient(to top, #166534, var(--money-color));
+            width: 100%;
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .money::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+            background-size: 200% 200%;
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { background-position: 200% 200%; }
+            100% { background-position: -200% -200%; }
+        }
+
+        .vault-label {
+            margin-top: 12px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .vault-volume {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: 800;
+            font-size: 22px;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            z-index: 10;
+            pointer-events: none;
+            width: 100%;
+            text-align: center;
+        }
+
+        .status-msg {
+            font-size: 16px;
+            font-weight: 600;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+        }
+
+        .win-msg {
+            color: var(--gold) !important;
+            border-color: var(--gold) !important;
+            background: rgba(251, 191, 36, 0.1) !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(251, 191, 36, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+            z-index: 10000;
+        }
+
+        button {
+            padding: 14px 28px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #334155;
+            color: white;
+        }
+        button:hover { background-color: #475569; }
+        button:active { transform: scale(0.95); }
+
+        button.win-btn {
+            background: linear-gradient(to right, var(--gold), #f59e0b);
+            color: #0f172a;
+            animation: pulse-btn 1.5s infinite;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        @keyframes pulse-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .stats {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9998;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .game-container { padding: 20px; }
+            .vaults-area { height: 250px; }
+            .v-12 { height: 180px; }
+            .v-7  { height: 110px; }
+            .v-5  { height: 80px; }
+            .vault-volume { font-size: 16px; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="start-screen">
+    <h2>💰 Бабломиллионы!</h2>
+    <p>Нажмите в любое место, чтобы начать</p>
+</div>
+
+<canvas id="fireworks-canvas"></canvas>
+
+<div class="game-container">
+    <h1>💰 Бабломиллионы!</h1>
+    <div class="rules">
+        В главном хранилище находится <b>12 млн</b>.<br>
+        Два других пусты (вмещают <b>7 млн</b> и <b>5 млн</b>).<br>
+        Переводите средства между депозитариями.<br>
+        <b>Цель:</b> добиться, чтобы в любом из них оказался ровно <b>1 миллион</b>.
+    </div>
+
+    <div class="vaults-area" id="vaults-area"></div>
+
+    <div class="status-msg" id="status-msg">Выберите депозитарий-источник.</div>
+
+    <div class="controls">
+        <button id="reset-btn" onclick="resetGame()">Сброс транзакций</button>
+    </div>
+
+    <div class="stats">
+        Транзакций совершено: <span id="moves-count">0</span>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 🔊 РАЗБЛОКИРОВКА ЗВУКА И СТАРТ
+    // ==========================================
+    let audioCtx = null;
+    const startScreen = document.getElementById('start-screen');
+
+    startScreen.addEventListener('click', () => {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        startScreen.style.opacity = '0';
+        setTimeout(() => {
+            startScreen.style.display = 'none';
+        }, 500);
+    });
+
+    // ==========================================
+    // 💸 ЗВУК ТРАНЗАКЦИИ (Новое!)
+    // ==========================================
+    function playTransferSound() {
+        if (!audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            // Быстрый скачок частоты вверх (эффект "кассового аппарата" или перевода)
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        } catch (e) {}
+    }
+
+    // ==========================================
+    // 🎮 ЛОГИКА ИГРЫ
+    // ==========================================
+    const capacities = [12, 7, 5];
+    let state = [12, 0, 0];
+    let moves = 0;
+    let selectedVault = null;
+    let isGameOver = false;
+
+    const vaultsArea = document.getElementById('vaults-area');
+    const statusMsg = document.getElementById('status-msg');
+    const movesCount = document.getElementById('moves-count');
+    const resetBtn = document.getElementById('reset-btn');
+    const canvas = document.getElementById('fireworks-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function init() {
+        vaultsArea.innerHTML = '';
+        capacities.forEach((cap, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'vault-wrapper';
+            wrapper.id = `vault-wrapper-${index}`;
+            wrapper.onclick = () => handleVaultClick(index);
+
+            wrapper.innerHTML = `
+                <div class="vault v-${cap}" id="vault-${index}">
+                    <div class="vault-volume" id="vol-${index}">${state[index]}M</div>
+                    <div class="money" id="money-${index}"></div>
+                </div>
+                <div class="vault-label">Депозитарий ${index + 1}</div>
+            `;
+            vaultsArea.appendChild(wrapper);
+        });
+        updateUI();
+    }
+
+    function updateUI() {
+        capacities.forEach((cap, index) => {
+            const moneyEl = document.getElementById(`money-${index}`);
+            const volEl = document.getElementById(`vol-${index}`);
+            const percentage = (state[index] / cap) * 100;
+            moneyEl.style.height = `${percentage}%`;
+            volEl.innerText = `${state[index]}M`;
+        });
+        movesCount.innerText = moves;
+        checkWin();
+    }
+
+    function handleVaultClick(index) {
+        if (isGameOver) return;
+
+        if (selectedVault === null) {
+            if (state[index] === 0) {
+                setStatus("Депозитарий пуст! Выберите другой.", "#ef4444");
+                return;
+            }
+            selectedVault = index;
+            document.getElementById(`vault-wrapper-${index}`).classList.add('selected');
+            setStatus(`Источник выбран (${capacities[index]}M). Теперь выберите КУДА перевести.`);
+        } else {
+            if (selectedVault === index) {
+                document.getElementById(`vault-wrapper-${index}`).classList.remove('selected');
+                selectedVault = null;
+                setStatus("Транзакция отменена. Выберите источник.");
+                return;
+            }
+
+            if (state[index] === capacities[index]) {
+                setStatus("Этот депозитарий заполнен до предела!", "#ef4444");
+                return;
+            }
+
+            transfer(selectedVault, index);
+            
+            document.getElementById(`vault-wrapper-${selectedVault}`).classList.remove('selected');
+            selectedVault = null;
+        }
+    }
+
+    function transfer(from, to) {
+        const amountToTransfer = Math.min(state[from], capacities[to] - state[to]);
+        if (amountToTransfer === 0) return;
+
+        state[from] -= amountToTransfer;
+        state[to] += amountToTransfer;
+        moves++;
+        
+        // ▶️ Воспроизводим звук при успешной транзакции
+        playTransferSound();
+        
+        setStatus(`Переведено ${amountToTransfer}M. Выбирайте следующий шаг.`);
+        updateUI();
+    }
+
+    function checkWin() {
+        if (state.includes(1)) {
+            isGameOver = true;
+            setStatus(`🎉 УСПЕХ! 1 миллион найден за ${moves} транзакций!`, "#fbbf24", true);
+            
+            resetBtn.classList.add('win-btn');
+            resetBtn.innerText = "Играть заново";
+            
+            startFireworks();
+            playFireworkSound();
+        } else if (!isGameOver && selectedVault === null) {
+            setStatus("Выберите депозитарий-источник.");
+        }
+    }
+
+    function setStatus(msg, color = "#f8fafc", isWin = false) {
+        statusMsg.innerText = msg;
+        statusMsg.style.color = color;
+        if (isWin) {
+            statusMsg.classList.add('win-msg');
+        } else {
+            statusMsg.classList.remove('win-msg');
+        }
+    }
+
+    function resetGame() {
+        state = [12, 0, 0];
+        moves = 0;
+        selectedVault = null;
+        isGameOver = false;
+        
+        resetBtn.classList.remove('win-btn');
+        resetBtn.innerText = "Сброс транзакций";
+        
+        stopFireworks();
+        document.querySelectorAll('.vault-wrapper').forEach(el => el.classList.remove('selected'));
+        init();
+        setStatus("Система перезагружена. Начните переводы.");
+    }
+
+    // ==========================================
+    // 🎆 ЗВУК ФЕЙЕРВЕРКА
+    // ==========================================
+    function playFireworkSound() {
+        if (!audioCtx) return;
+        try {
+            for (let i = 0; i < 6; i++) {
+                setTimeout(() => {
+                    playWhistle();
+                    setTimeout(playExplosion, 400);
+                }, i * 800);
+            }
+        } catch (e) {}
+    }
+
+    function playWhistle() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    function playExplosion() {
+        if (!audioCtx) return;
+        const duration = 1.2;
+        const sampleRate = audioCtx.sampleRate;
+        const bufferSize = sampleRate * duration;
+        const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / sampleRate;
+            const envelope = Math.exp(-t * 5);
+            data[i] = (Math.random() * 2 - 1) * envelope;
+        }
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(4000, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + duration);
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.6, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start();
+    }
+
+    // ==========================================
+    // 🎆 ВИЗУАЛ ФЕЙЕРВЕРКА
+    // ==========================================
+    let fireworks = [];
+    let particles = [];
+    let animationId = null;
+    let isAnimating = false;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y; this.color = color;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 5 + 2;
+            this.velocity = { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed };
+            this.alpha = 1;
+            this.decay = Math.random() * 0.015 + 0.005;
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        update() {
+            this.velocity.y += 0.05;
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            this.alpha -= this.decay;
+            this.draw();
+        }
+    }
+
+    class Firework {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = canvas.height;
+            this.targetY = Math.random() * (canvas.height / 2) + 50;
+            this.speed = Math.random() * 3 + 4;
+            this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+        }
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        update() {
+            this.y -= this.speed;
+            this.draw();
+            if (this.y <= this.targetY) {
+                this.explode();
+                return true;
+            }
+            return false;
+        }
+        explode() {
+            for (let i = 0; i < 80; i++) {
+                particles.push(new Particle(this.x, this.y, this.color));
+            }
+        }
+    }
+
+    function animate() {
+        if (!isAnimating) return;
+        animationId = requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (Math.random() < 0.1) fireworks.push(new Firework());
+        for (let i = fireworks.length - 1; i >= 0; i--) {
+            if (fireworks[i].update()) fireworks.splice(i, 1);
+        }
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            if (particles[i].alpha <= 0) particles.splice(i, 1);
+        }
+    }
+
+    function startFireworks() {
+        canvas.style.display = 'block';
+        isAnimating = true;
+        animate();
+    }
+
+    function stopFireworks() {
+        isAnimating = false;
+        if (animationId) cancelAnimationFrame(animationId);
+        canvas.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fireworks = [];
+        particles = [];
+    }
+
+    init();
+</script>
+</body>
+</html>
